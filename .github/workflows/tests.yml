@@ -29,26 +29,33 @@ jobs:
           # Указываем версию Python, как требовалось в лабораторной (3.12)
           python-version: '3.12'
 
-      # Шаг 3: Установка зависимостей
+      # Шаг 3: Установка зависимостей (остается как было)
       - name: Install project dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest httpx
 
-      # !!! НОВЫЙ ШАГ ДЛЯ ПРЯМОЙ ПРОВЕРКИ ИМПОРТА !!!
-      - name: Direct Import Verification
+      # !!! НОВЫЙ ШАГ: Форсированная переустановка и проверка Pydantic !!!
+      - name: Force Reinstall and Verify Pydantic
         run: |
-          echo "--- Current Directory: $(pwd) ---"
-          echo "--- Root Listing: ---"
-          ls -la .
-          echo "--- src/ Listing: ---"
-          ls -la src/
-          echo "--- Attempting direct imports ---"
-          # Запускаем Python и пытаемся импортировать модули, вызывающие проблемы
-          # Добавляем текущую директорию в sys.path, как мы делали в тесте
-          python -c "import sys; sys.path.insert(0, '.'); print(' PYTHONPATH:', sys.path); import src.settings; print(' Imported src.settings OK'); import src.main; print(' Imported src.main OK')"
+          echo "--- Uninstalling pydantic and pydantic-core ---"
+          pip uninstall -y pydantic pydantic-core || echo "Pydantic not found, continuing..."
+          
+          echo "--- Installing pydantic without cache ---"
+          pip install --no-cache-dir "pydantic>=2.0"
+          
+          echo "--- Showing pydantic and pydantic-core info AFTER reinstall ---"
+          pip show pydantic pydantic-core
 
-      # Шаг 4: Запуск тестов (остается без изменений)
+          echo "--- Attempting direct import of pydantic.settings ---"
+          # Пытаемся импортировать ТОЛЬКО проблемный модуль напрямую
+          python -c "import pydantic.settings; print('=== pydantic.settings IMPORT OK ===')"
+          
+          # Можно добавить проверку pydantic_core тоже
+          # python -c "import pydantic_core; print('=== pydantic_core IMPORT OK ===')"
+
+      # Шаг 4: Запуск тестов (остается как было)
       - name: Run tests with pytest
-        # Мы удалили env: PYTHONPATH: '.' ранее, оставляем так
+        env:
+          PYTHONPATH: '.' # Оставляем это на всякий случай, хотя проблема, похоже, не здесь
         run: python -m pytest tests/
