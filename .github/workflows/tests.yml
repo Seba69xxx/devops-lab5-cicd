@@ -51,8 +51,29 @@ jobs:
           # Пытаемся импортировать ТОЛЬКО проблемный модуль напрямую
           python -c "import pydantic.settings; print('=== pydantic.settings IMPORT OK ===')"
           
-          # Можно добавить проверку pydantic_core тоже
-          # python -c "import pydantic_core; print('=== pydantic_core IMPORT OK ===')"
+          # !!! ШАГ: Форсированная переустановка и проверка Pydantic !!!
+      - name: Force Reinstall and Verify Pydantic
+        run: |
+          echo "--- Uninstalling pydantic and pydantic-core ---"
+          pip uninstall -y pydantic pydantic-core || echo "Pydantic not found, continuing..."
+          
+          echo "--- Installing pydantic without cache ---"
+          pip install --no-cache-dir "pydantic>=2.0"
+          
+          echo "--- Showing pydantic and pydantic-core info AFTER reinstall ---"
+          pip show pydantic pydantic-core
+
+          echo "--- Attempting to import pydantic and check attributes ---"
+          # Пытаемся импортировать сам pydantic и проверить наличие .settings
+          python -c "import pydantic; print(f'pydantic imported successfully: {pydantic}'); print(f'Attributes: {dir(pydantic)}'); print(f'Has settings attribute: {hasattr(pydantic, \'settings\')}')"
+          
+          # Если предыдущая команда прошла, пытаемся импортировать pydantic.errors (другой подмодуль)
+          echo "--- Attempting to import pydantic.errors ---"
+          python -c "import pydantic.errors; print('=== pydantic.errors IMPORT OK ===')"
+
+          # И все еще пробуем импортировать pydantic.settings
+          echo "--- Attempting direct import of pydantic.settings AGAIN ---"
+          python -c "import pydantic.settings; print('=== pydantic.settings IMPORT OK ===')"
 
       # Шаг 4: Запуск тестов (остается как было)
       - name: Run tests with pytest
