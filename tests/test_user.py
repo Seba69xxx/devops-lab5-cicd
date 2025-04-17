@@ -1,11 +1,21 @@
 from fastapi.testclient import TestClient
+import sys
+import os
 
-from src.main import app
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+sys.path.insert(0, project_root)
+
+try:
+    from src.main import app
+except ImportError as e:
+    print(f"Не удалось импортировать 'app' из 'src.main'. Ошибка: {e}")
+    print(f"Текущий sys.path: {sys.path}")
+    raise ImportError(f"Не удалось импортировать 'app' из 'src.main'. Проверьте структуру проекта. Ошибка: {e}") from e
 
 client = TestClient(app)
 
-# Существующие пользователи
-users = [
+users_data = [
     {
         'id': 1,
         'name': 'Ivan Ivanov',
@@ -17,92 +27,49 @@ users = [
         'email': 'p.p.petrov@mail.com',
     }
 ]
+existing_user_1_email = users_data[0]['email']
+existing_user_1_data = users_data[0]
+
+existing_user_2_id = users_data[1]['id']
+existing_user_2_email = users_data[1]['email']
+
 
 def test_get_existed_user():
-    '''Получение существующего пользователя'''
-    response = client.get("/api/v1/user", params={'email': users[0]['email']})
+    response = client.get("/api/v1/user", params={'email': existing_user_1_email})
     assert response.status_code == 200
-    assert response.json() == users[0]
+    assert response.json() == existing_user_1_data
 
 def test_get_unexisted_user():
-    '''Получение несуществующего пользователя'''
-    pass
-
-def test_create_user_with_valid_email():
-    '''Создание пользователя с уникальной почтой'''
-    pass
-
-def test_create_user_with_invalid_email():
-    '''Создание пользователя с почтой, которую использует другой пользователь'''
-    pass
-
-def test_delete_user():
-    '''Удаление пользователя'''
-    pass
-
-import httpx
-import pytest
-from main import app # Убедитесь, что экземпляр вашего FastAPI приложения называется 'app' в main.py
-
-# Базовый URL для тестового клиента
-BASE_URL = "http://test"
-
-# Существующий тест (для справки)
-@pytest.mark.asyncio
-async def test_get_existed_user():
-    async with httpx.AsyncClient(app=app, base_url=BASE_URL) as client:
-        response = await client.get("/users/1")
-    assert response.status_code == 200
-    assert response.json() == {"user_id": 1, "username": "Alice"}
-
-# --- TODO: Реализуйте следующие четыре теста ---
-
-@pytest.mark.asyncio
-async def test_get_non_existed_user():
-    """Тест получения пользователя, которого не существует."""
-    async with httpx.AsyncClient(app=app, base_url=BASE_URL) as client:
-        # Предполагаем, что пользователя с ID 999 нет в исходных данных
-        response = await client.get("/users/999")
-    # Согласно src/routers/user.py, получение несуществующего пользователя возвращает 404
+    non_existent_email = "non.existent@example.com"
+    response = client.get("/api/v1/user", params={'email': non_existent_email})
     assert response.status_code == 404
 
-@pytest.mark.asyncio
-async def test_create_user():
-    """Тест создания нового пользователя."""
-    new_user_data = {"username": "Charlie"}
-    async with httpx.AsyncClient(app=app, base_url=BASE_URL) as client:
-        response = await client.post("/users/", json=new_user_data)
-    # Согласно src/routers/user.py, успешное создание возвращает 201
+def test_create_user_with_valid_email():
+    new_user_data = {
+        'name': 'Anna Karenina',
+        'email': 'a.k.karenina@novel.com',
+    }
+    response = client.post("/api/v1/user", json=new_user_data)
     assert response.status_code == 201
-    # Тело ответа должно содержать данные нового пользователя, включая присвоенный ID
-    # Предположим, что следующий ID будет 3 (если в исходных данных есть 1 и 2)
-    # Примечание: Более надежный тест мог бы сначала получить всех пользователей, чтобы определить ожидаемый следующий ID
     response_data = response.json()
-    assert response_data["username"] == "Charlie"
-    assert "user_id" in response_data # Проверяем, был ли присвоен ID
+    assert response_data['name'] == new_user_data['name']
+    assert response_data['email'] == new_user_data['email']
+    assert 'id' in response_data
 
-@pytest.mark.asyncio
-async def test_create_user_conflict():
-    """Тест создания пользователя, чье имя уже существует."""
-    # Alice уже существует в исходных данных
-    existing_user_data = {"username": "Alice"}
-    async with httpx.AsyncClient(app=app, base_url=BASE_URL) as client:
-        response = await client.post("/users/", json=existing_user_data)
-    # Согласно src/routers/user.py, создание пользователя с существующим именем возвращает 409
+def test_create_user_with_invalid_email():
+    conflicting_user_data = {
+        'name': 'Another Ivan',
+        'email': existing_user_1_email,
+    }
+    response = client.post("/api/v1/user", json=conflicting_user_data)
     assert response.status_code == 409
 
-@pytest.mark.asyncio
-async def test_delete_user():
-    """Тест удаления существующего пользователя."""
-    # Удалим Bob (user_id 2, предполагая исходные данные)
-    user_id_to_delete = 2
-    async with httpx.AsyncClient(app=app, base_url=BASE_URL) as client:
-        response = await client.delete(f"/users/{user_id_to_delete}")
-    # Согласно src/routers/user.py, успешное удаление возвращает 200
+def test_delete_user():
+    user_id_to_delete = existing_user_2_id
+    delete_url = f"/api/v1/user/{user_id_to_delete}"
+    response = client.delete(delete_url)
     assert response.status_code == 200
-    assert response.json() == {"message": f"User {user_id_to_delete} deleted"}
 
-    # Опционально: Проверим, действительно ли пользователь удален
-    async with httpx.AsyncClient(app=app, base_url=BASE_URL) as client:
-         response_check = await client.get(f"/users/{user_id_to_delete}")
-    assert response_check.status_code == 404 # Теперь должен быть Not Found (Не найден)
+    get_deleted_url = f"/api/v1/user/{user_id_to_delete}"
+    response_check = client.get(get_deleted_url)
+    assert response_check.status_code == 404
