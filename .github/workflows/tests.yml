@@ -44,9 +44,11 @@ jobs:
           pip install -r requirements.txt pytest httpx
 
       # Шаг 4: Запуск тестов
-      # Выполняем тесты с помощью pytest.
       - name: Run tests with pytest
-        # Команда 'python -m pytest tests/' запускает pytest,
-        # который автоматически обнаружит и выполнит тесты
-        # в указанной директории (tests/)
+        # Добавляем переменную окружения PYTHONPATH
+        # Указываем '.', что означает текущую рабочую директорию
+        # (корневую папку репозитория после checkout), где находится папка src
+        env:
+          PYTHONPATH: '.'
+        # Команда запуска pytest остается прежней
         run: python -m pytest tests/
