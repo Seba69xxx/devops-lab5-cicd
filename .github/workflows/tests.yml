@@ -1,40 +1,27 @@
-# Имя рабочего процесса
 name: Test Python App
 
-# Триггер запуска
 on: push
 
 jobs:
   ci:
-    # Машина для запуска
     runs-on: ubuntu-latest
-
-    # Шаги выполнения
     steps:
-      # Шаг 1: Получение кода
       - name: Checkout repository code
         uses: actions/checkout@v4
 
-      # Шаг 2: Настройка Python (оставляем 3.11 или верните 3.12, если хотите)
       - name: Setup Python environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # или '3.12'
+          python-version: '3.11' # Или '3.12', если вы предпочитаете
 
-      # Шаг 3: Установка зависимостей
       - name: Install project dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest httpx
 
-      # !!! ВСЕ ДИАГНОСТИЧЕСКИЕ ШАГИ УДАЛЕНЫ !!!
-      # (Удалены "Show Pydantic Info", "Direct Import Verification",
-      # "Force Reinstall and Verify Pydantic")
+      # Диагностические шаги удалены
 
-      # Шаг 4: Запуск тестов
       - name: Run tests with pytest
-        # Можно оставить env: PYTHONPATH, но он может быть уже не нужен,
-        # если вы исправили импорты в tests/test_user.py через sys.path
         env:
-          PYTHONPATH: '.'
+          PYTHONPATH: '.' # Указываем Python искать модули в корневой директории
         run: python -m pytest tests/
