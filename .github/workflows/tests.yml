@@ -43,6 +43,10 @@ jobs:
           # Убедитесь, что в requirements.txt есть как минимум fastapi, uvicorn, pydantic
           pip install -r requirements.txt pytest httpx
 
+         # !!! НОВЫЙ ДИАГНОСТИЧЕСКИЙ ШАГ !!!
+      - name: Show Pydantic Info
+        run: pip show pydantic
+
       # Шаг 4: Запуск тестов
       - name: Run tests with pytest
         # Добавляем переменную окружения PYTHONPATH
