@@ -1,10 +1,13 @@
-# tests/test_user.py
 from fastapi.testclient import TestClient
-# import sys # Больше не нужен
-# import os # Больше не нужен
+import sys
+import os
 import pytest
 
-# Блок с sys.path.insert УДАЛЕН
+# --- Добавление корневой директории проекта в PYTHONPATH (на всякий случай) ---
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+sys.path.insert(0, project_root)
+# ---------------------------------------------------------
 
 # Импортируем приложение (должно работать благодаря PYTHONPATH в tests.yml)
 try:
@@ -15,9 +18,10 @@ except ImportError as e:
 
 client = TestClient(app)
 
+# Начальные данные для тестов (соответствуют вашей реализации API)
 users_data = [
     {
-        'id': 1,
+        'id': 1, # ID используется только для проверки ответа GET
         'name': 'Ivan Ivanov',
         'email': 'i.i.ivanov@mail.com',
     },
@@ -28,15 +32,13 @@ users_data = [
     }
 ]
 existing_user_1_email = users_data[0]['email']
-existing_user_1_data = users_data[0]
-
-# existing_user_2_id = users_data[1]['id'] # Не используется напрямую
-existing_user_2_email = users_data[1]['email']
+existing_user_1_data = users_data[0] # Полные данные для сравнения
 
 
 def test_get_existed_user():
     response = client.get("/api/v1/user", params={'email': existing_user_1_email})
     assert response.status_code == 200
+    # Предполагаем, что GET возвращает полные данные пользователя
     assert response.json() == existing_user_1_data
 
 def test_get_unexisted_user():
@@ -50,33 +52,40 @@ def test_create_user_with_valid_email():
         'email': 'a.k.karenina@novel.com',
     }
     response = client.post("/api/v1/user", json=new_user_data)
-    assert response.status_code == 201
+    assert response.status_code == 201 # Статус код для создания
     response_data = response.json()
+    # Проверяем, что API (согласно коду) вернул ID (int)
     assert isinstance(response_data, int), f"Ожидался int (ID пользователя), получено: {type(response_data)}"
     assert response_data > 0, "Ожидался положительный ID пользователя"
 
 def test_create_user_with_invalid_email():
     conflicting_user_data = {
         'name': 'Another Ivan',
-        'email': existing_user_1_email,
+        'email': existing_user_1_email, # Используем email существующего пользователя
     }
     response = client.post("/api/v1/user", json=conflicting_user_data)
+    # Ожидаем конфликт (согласно декоратору в API)
     assert response.status_code == 409
 
 def test_delete_user():
+    # Шаг 1: Создаем пользователя, которого будем удалять
     user_to_delete_data = {
         'name': 'User ToDelete',
         'email': 'delete.me@example.com'
     }
     create_response = client.post("/api/v1/user", json=user_to_delete_data)
     assert create_response.status_code == 201, "Не удалось создать пользователя для теста удаления"
-    user_id_to_delete = create_response.json()
-    assert isinstance(user_id_to_delete, int), "Создание пользователя не вернуло ID для теста удаления"
+    # ID нам не нужен для удаления по email, но проверяем, что он вернулся
+    user_id_created = create_response.json()
+    assert isinstance(user_id_created, int), "Создание пользователя не вернуло ID"
 
-    delete_url = f"/api/v1/user/{user_id_to_delete}"
-    response = client.delete(delete_url)
-    assert response.status_code == 200, f"Ожидался статус 200 при удалении, получен {response.status_code}"
+    # Шаг 2: Удаляем пользователя по его EMAIL
+    email_to_delete = user_to_delete_data['email']
+    delete_response = client.delete("/api/v1/user", params={'email': email_to_delete})
+    # Проверяем статус код (204 No Content согласно вашему API)
+    assert delete_response.status_code == 204, f"Ожидался статус 204 при удалении, получен {delete_response.status_code}"
 
-    get_deleted_url = f"/api/v1/user/{user_id_to_delete}"
-    response_check = client.get(get_deleted_url)
-    assert response_check.status_code == 404, f"Ожидался статус 404 после удаления, получен {response_check.status_code}"
+    # Шаг 3: Проверяем, что пользователь действительно удален (попытка получить его по email)
+    get_response_check = client.get("/api/v1/user", params={'email': email_to_delete})
+    # Ожидаем 404 Not Found
+    assert get_response_check.status_code == 404, f"Ожидался статус 404 после удаления, получен {get_response_check.status_code}"
