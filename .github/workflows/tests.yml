@@ -30,29 +30,25 @@ jobs:
           python-version: '3.12'
 
       # Шаг 3: Установка зависимостей
-      # Этот шаг устанавливает все пакеты, необходимые для сборки,
-      # тестирования и запуска приложения.
       - name: Install project dependencies
-        run: | # 'run' выполняет команды в shell виртуальной машины
-          # '|' позволяет писать многострочный скрипт
-          # Сначала обновляем pip до последней версии (хорошая практика)
+        run: |
           python -m pip install --upgrade pip
-          # Затем устанавливаем пакеты, перечисленные в файле requirements.txt,
-          # а также явно устанавливаем pytest и httpx, как указано в ЛР
-          # (httpx нужен для TestClient, даже если не используется напрямую в тестах)
-          # Убедитесь, что в requirements.txt есть как минимум fastapi, uvicorn, pydantic
           pip install -r requirements.txt pytest httpx
 
-         # !!! НОВЫЙ ДИАГНОСТИЧЕСКИЙ ШАГ !!!
-      - name: Show Pydantic Info
-        run: pip show pydantic
+      # !!! НОВЫЙ ШАГ ДЛЯ ПРЯМОЙ ПРОВЕРКИ ИМПОРТА !!!
+      - name: Direct Import Verification
+        run: |
+          echo "--- Current Directory: $(pwd) ---"
+          echo "--- Root Listing: ---"
+          ls -la .
+          echo "--- src/ Listing: ---"
+          ls -la src/
+          echo "--- Attempting direct imports ---"
+          # Запускаем Python и пытаемся импортировать модули, вызывающие проблемы
+          # Добавляем текущую директорию в sys.path, как мы делали в тесте
+          python -c "import sys; sys.path.insert(0, '.'); print(' PYTHONPATH:', sys.path); import src.settings; print(' Imported src.settings OK'); import src.main; print(' Imported src.main OK')"
 
-      # Шаг 4: Запуск тестов
+      # Шаг 4: Запуск тестов (остается без изменений)
       - name: Run tests with pytest
-        # Добавляем переменную окружения PYTHONPATH
-        # Указываем '.', что означает текущую рабочую директорию
-        # (корневую папку репозитория после checkout), где находится папка src
-        env:
-          PYTHONPATH: '.'
-        # Команда запуска pytest остается прежней
+        # Мы удалили env: PYTHONPATH: '.' ранее, оставляем так
         run: python -m pytest tests/
