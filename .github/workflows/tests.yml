@@ -1,82 +1,40 @@
-# Имя рабочего процесса, отображаемое на GitHub Actions
+# Имя рабочего процесса
 name: Test Python App
 
-# Триггер: Запускать этот workflow при любом push в любую ветку репозитория
+# Триггер запуска
 on: push
 
 jobs:
-  # Имя задания (может быть любым, 'ci' - common practice for Continuous Integration)
   ci:
-    # Указываем тип виртуальной машины, на которой будет выполняться задание
-    # 'ubuntu-latest' - последняя стабильная версия Ubuntu Linux
+    # Машина для запуска
     runs-on: ubuntu-latest
 
-    # Последовательность шагов, выполняемых в рамках задания 'ci'
+    # Шаги выполнения
     steps:
-      # Шаг 1: Получение кода репозитория
-      # Используем стандартное действие 'checkout' для загрузки кода
-      # на виртуальную машину, чтобы workflow мог с ним работать.
-      # v4 - это версия действия, рекомендуется использовать актуальные версии.
+      # Шаг 1: Получение кода
       - name: Checkout repository code
         uses: actions/checkout@v4
 
-      # Шаг 2: Настройка среды Python
-      # Используем стандартное действие 'setup-python' для установки
-      # нужной версии Python и добавления её в PATH.
+      # Шаг 2: Настройка Python (оставляем 3.11 или верните 3.12, если хотите)
       - name: Setup Python environment
         uses: actions/setup-python@v5
         with:
-          # Указываем версию Python, как требовалось в лабораторной (3.12)
-          python-version: '3.11'
+          python-version: '3.11' # или '3.12'
 
-      # Шаг 3: Установка зависимостей (остается как было)
+      # Шаг 3: Установка зависимостей
       - name: Install project dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest httpx
 
-      # !!! НОВЫЙ ШАГ: Форсированная переустановка и проверка Pydantic !!!
-      - name: Force Reinstall and Verify Pydantic
-        run: |
-          echo "--- Uninstalling pydantic and pydantic-core ---"
-          pip uninstall -y pydantic pydantic-core || echo "Pydantic not found, continuing..."
-          
-          echo "--- Installing pydantic without cache ---"
-          pip install --no-cache-dir "pydantic>=2.0"
-          
-          echo "--- Showing pydantic and pydantic-core info AFTER reinstall ---"
-          pip show pydantic pydantic-core
+      # !!! ВСЕ ДИАГНОСТИЧЕСКИЕ ШАГИ УДАЛЕНЫ !!!
+      # (Удалены "Show Pydantic Info", "Direct Import Verification",
+      # "Force Reinstall and Verify Pydantic")
 
-          echo "--- Attempting direct import of pydantic.settings ---"
-          # Пытаемся импортировать ТОЛЬКО проблемный модуль напрямую
-          python -c "import pydantic.settings; print('=== pydantic.settings IMPORT OK ===')"
-          
-          # !!! ШАГ: Форсированная переустановка и проверка Pydantic !!!
-      - name: Force Reinstall and Verify Pydantic
-        run: |
-          echo "--- Uninstalling pydantic and pydantic-core ---"
-          pip uninstall -y pydantic pydantic-core || echo "Pydantic not found, continuing..."
-          
-          echo "--- Installing pydantic without cache ---"
-          pip install --no-cache-dir "pydantic>=2.0"
-          
-          echo "--- Showing pydantic and pydantic-core info AFTER reinstall ---"
-          pip show pydantic pydantic-core
-
-          echo "--- Attempting to import pydantic and check attributes ---"
-          # Пытаемся импортировать сам pydantic и проверить наличие .settings
-          python -c "import pydantic; print(f'pydantic imported successfully: {pydantic}'); print(f'Attributes: {dir(pydantic)}'); print(f'Has settings attribute: {hasattr(pydantic, \'settings\')}')"
-          
-          # Если предыдущая команда прошла, пытаемся импортировать pydantic.errors (другой подмодуль)
-          echo "--- Attempting to import pydantic.errors ---"
-          python -c "import pydantic.errors; print('=== pydantic.errors IMPORT OK ===')"
-
-          # И все еще пробуем импортировать pydantic.settings
-          echo "--- Attempting direct import of pydantic.settings AGAIN ---"
-          python -c "import pydantic.settings; print('=== pydantic.settings IMPORT OK ===')"
-
-      # Шаг 4: Запуск тестов (остается как было)
+      # Шаг 4: Запуск тестов
       - name: Run tests with pytest
+        # Можно оставить env: PYTHONPATH, но он может быть уже не нужен,
+        # если вы исправили импорты в tests/test_user.py через sys.path
         env:
-          PYTHONPATH: '.' # Оставляем это на всякий случай, хотя проблема, похоже, не здесь
+          PYTHONPATH: '.'
         run: python -m pytest tests/
