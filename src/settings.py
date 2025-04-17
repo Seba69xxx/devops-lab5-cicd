@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic.settings import BaseSettings
 
 class Settings(BaseSettings):
     SERVER_ADDR: str = "0.0.0.0"
