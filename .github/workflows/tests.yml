@@ -27,7 +27,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           # Указываем версию Python, как требовалось в лабораторной (3.12)
-          python-version: '3.12'
+          python-version: '3.11'
 
       # Шаг 3: Установка зависимостей (остается как было)
       - name: Install project dependencies
