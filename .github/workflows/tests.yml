@@ -1,0 +1,30 @@
+name: Test Python App # Имя рабочего процесса
+
+on: push # Правило: запускаться при любом пуше в репозиторий
+
+jobs:
+  ci: # Имя задания
+    runs-on: ubuntu-latest # Тип машины для запуска
+
+    steps:
+      # Шаг 1: Получение кода репозитория
+      - name: Checkout # Имя шага
+        uses: actions/checkout@v4 # Используемое действие GitHub Actions
+
+      # Шаг 2: Настройка Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' # Указание версии Python
+
+      # Шаг 3: Установка зависимостей
+      - name: Install Dependencies
+        run: | # Блок выполнения shell-команд
+          python -m pip install --upgrade pip
+          # Установка зависимостей из файла И библиотек для тестирования
+          pip install -r requirements.txt pytest httpx
+
+      # Шаг 4: Запуск тестов
+      - name: Run Tests
+        run: python -m pytest tests/
+        # Команда, указанная в документации к ЛР
