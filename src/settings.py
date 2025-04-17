@@ -1,7 +1,9 @@
-from pydantic.settings import BaseSettings
+import os
 
-class Settings(BaseSettings):
-    SERVER_ADDR: str = "0.0.0.0"
-    SERVER_PORT: int = 8080
-    
+class Settings:
+    SERVER_ADDR: str = os.getenv("SERVER_ADDR", "0.0.0.0")
+    SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8000"))
+
 settings = Settings()
+
+print(f"Settings loaded: SERVER_ADDR={settings.SERVER_ADDR}, SERVER_PORT={settings.SERVER_PORT}")
