@@ -1,4 +1,17 @@
-name: Test Python App # Имя рабочего процесса
+# Шаг 3: Установка зависимостей
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Установка зависимостей из файла И библиотек для тестирования
+          pip install -r requirements.txt pytest httpx
+
+      # !!! НОВЫЙ ДИАГНОСТИЧЕСКИЙ ШАГ !!!
+      - name: Verify Pydantic Import
+        run: python -c "from pydantic.settings import BaseSettings; print('=== Pydantic Settings Import OK ===')"
+
+      # Шаг 4: Запуск тестов
+      - name: Run Tests
+        run: python -m pytest tests/name: Test Python App # Имя рабочего процесса
 
 on: push # Правило: запускаться при любом пуше в репозиторий
 
